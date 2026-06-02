@@ -17,8 +17,8 @@ class HTMLNode:
         self.children=children
         self.props=props
 
-    #I went too verbose here. Suggested solution was just:
-    #return f"HTMLNode({self.tag}, {self.value}, children: {self.children}, {self.props})"
+    #I've commented out my overly verbose version. repr should just be a simple one-liner
+    """
     def __repr__(self):
         output=""
         output+=f"\nTag: {self.tag}\n"
@@ -28,7 +28,9 @@ class HTMLNode:
                 output+=f'Child: {i}\n'
         output+=self.props_to_html()
         return output
-            
+    """
+    def __repr__(self):
+        return f"HTMLNode({self.tag}, {self.value}, children: {self.children}, {self.props})"            
 
 
     def to_html(self):
@@ -43,3 +45,19 @@ class HTMLNode:
             built_html+=f' {i}="{self.props[i]}"'
         return built_html
     
+class LeafNode(HTMLNode):
+
+    def __init__(self, tag, value, props:dict|None=None):
+        super().__init__(tag, value, None, props)
+    
+    def to_html(self):
+        if self.value is None:
+            raise ValueError
+        elif self.tag is None:
+            return self.value
+        else:
+            #Simply stick the value between the two htmlified
+            return f'<{self.tag}{self.props_to_html()}>{self.value}</{self.tag}>'
+        
+    def __repr__(self):
+        return f"LeafNode({self.tag}, {self.value}, {self.props})"     
