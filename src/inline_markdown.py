@@ -1,6 +1,14 @@
 import re
 from textnode import TextNode, TextType
 
+class BlockType(Enum):
+    PARAGRAPH = "paragraph"
+    HEADING = "heading"
+    CODE = "code"
+    QUOTE = "quote"
+    UNORDERED_LIST = "unordered_list"
+    ORDERED_LIST = "ordered_list"
+
 
 def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: TextType) -> list[TextNode]:
     output=[]
@@ -137,4 +145,22 @@ def text_to_textnodes(text)-> list[TextNode]:
     #Finally do the link and image tagging, and return it 
     return split_nodes_image(split_nodes_link(input_node))
    
+def markdown_to_blocks(markdown:str) ->list[str]:
     
+    #Split the input text into a list of strings, based on a "double new line" (is this assuming no spaces?)
+    split_blocks = markdown.split("\n\n")
+
+    #list for cleaned output
+    cleaned_blocks = []
+
+    #Iterate through these blocks to clean them up
+    for block in split_blocks:
+        #Remove leading and trailing spaces on the block
+        output_block = block.strip()
+        
+        #If the block isn't empty, add it to the output
+        if len(output_block) > 0:
+            cleaned_blocks.append(output_block)
+
+    return cleaned_blocks
+
