@@ -35,7 +35,7 @@ def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: 
 
 
 
-
+##Functions to strip URLS and text out of links and images in MD
 def extract_markdown_images(text):
     #This was the solution provided as a tip 
     return re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)",text)
@@ -44,3 +44,84 @@ def extract_markdown_images(text):
 
 def extract_markdown_links(text):
     return re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)",text)
+
+def split_nodes_image(old_nodes: list[TextNode]) -> list[TextNode]:
+    output = []
+    #Loop through the list of nodes passed in
+    for old_node in old_nodes:
+        #If it's already been marked as non-text, we don't want to reprocess it
+        if old_node.text_type != TextType.TEXT:
+            output.append(old_node)
+        else:
+            check_images = extract_markdown_images(old_node.text)
+            #If we didn't find any images, just put this back onto the output list, and check the next old node
+            if len(check_images)==0:
+                output.append(old_node)
+            #We now need to break up the old_node into images and text nodes
+            else:
+                #Copy all the text from the node into a string, which we're going to now break down
+                remaining_text=old_node.text
+                #Now iterate through the node text, for each image we have (it's at least 1)
+                for image in check_images:
+                    alt=image[0]
+                    url=image[1]
+
+                    #Split the string on the current image
+                    before, after = remaining_text.split(f"![{alt}]({url})", 1)
+
+                    #if there was text before the image, made a node for it:
+                    if len(before)>0:
+                        output.append(TextNode(text=before, text_type=TextType.TEXT))
+                    
+                    #Then add the image node:
+                    output.append(TextNode(text=alt, url=url, text_type=TextType.IMAGE))
+
+                    #Finally, update the remaining text with whatever was after the current image, and iterate again
+                    remaining_text = after
+                
+                #If we had any text after the last image in the node, add this.
+                if len(remaining_text) > 0:
+                    output.append(TextNode(text=remaining_text, text_type=TextType.TEXT))
+    return output
+
+
+def split_nodes_link(old_nodes: list[TextNode]) -> list[TextNode]:
+    output = []
+    #Loop through the list of nodes passed in
+    for old_node in old_nodes:
+        #If it's already been marked as non-text, we don't want to reprocess it
+        if old_node.text_type != TextType.TEXT:
+            output.append(old_node)
+        else:
+            check_links = extract_markdown_links(old_node.text)
+            #If we didn't find any links, just put this back onto the output list, and check the next old node
+            if len(check_links)==0:
+                output.append(old_node)
+            #We now need to break up the old_node into links and text
+            else:
+                #Copy all the text from the node into a string, which we're going to now break down
+                remaining_text=old_node.text
+                #Now iterate through the node text, for each image we have (it's at least 1)
+                for link in check_links:
+                    txt=link[0]
+                    url=link[1]
+
+                    #Split the string on the current link
+                    before, after = remaining_text.split(f"[{txt}]({url})", 1)
+
+                    #if there was text before the link, made a node for it:
+                    if len(before)>0:
+                        output.append(TextNode(text=before, text_type=TextType.TEXT))
+                    
+                    #Then add the link node:
+                    output.append(TextNode(text=txt, url=url, text_type=TextType.LINK))
+
+                    #Finally, update the remaining text with whatever was after the current link, and iterate again
+                    remaining_text = after
+                
+                #If we had any text after the last link in the node, add this.
+                if len(remaining_text) > 0:
+                    output.append(TextNode(text=remaining_text, text_type=TextType.TEXT))
+    return output
+
+            
