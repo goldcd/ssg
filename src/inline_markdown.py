@@ -124,4 +124,17 @@ def split_nodes_link(old_nodes: list[TextNode]) -> list[TextNode]:
                     output.append(TextNode(text=remaining_text, text_type=TextType.TEXT))
     return output
 
-            
+def text_to_textnodes(text)-> list[TextNode]:
+    #Chuck all the text into one giant node on a new list
+    input_node = [TextNode(text=text, text_type=TextType.TEXT)]
+     #Now blast it through my slicers - I really don't want to have to debug this if it fucks up (but I'll be very happy if this works first time)
+    
+    #Now work through the non-leaf items
+    input_node=split_nodes_delimiter(input_node, "**",TextType.BOLD)
+    input_node=split_nodes_delimiter(input_node, "_",TextType.ITALIC)
+    input_node=split_nodes_delimiter(input_node, "`",TextType.CODE)
+
+    #Finally do the link and image tagging, and return it 
+    return split_nodes_image(split_nodes_link(input_node))
+   
+    
