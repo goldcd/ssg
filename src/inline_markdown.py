@@ -1,5 +1,7 @@
 import re
 from textnode import TextNode, TextType
+from enum import Enum
+
 
 class BlockType(Enum):
     PARAGRAPH = "paragraph"
@@ -164,3 +166,84 @@ def markdown_to_blocks(markdown:str) ->list[str]:
 
     return cleaned_blocks
 
+def block_to_block_type(markdown:str) -> BlockType:
+    
+    #Headings start with 1-6 # characters, followed by a space and then the heading text.
+    
+    #Is this a heading block, with 1-6 hashes and a space at the start?
+    if len(re.findall(r"^(#{1,6} +.)",markdown)) > 0:
+        return BlockType.HEADING
+    #startswith(("# ", "## ", "### ", "#### ", "##### ", "###### ")) Would have been a FAR better bit of logic..
+    #Or if I'd insisted on using regex, I should have been easier to use "if re.match(r"^#{1,6} .+", markdown):"
+    
+    #Multiline Code blocks must start with 3 backticks and a newline, then end with 3 backticks.
+    
+    #If string starts ```<new line> and ends ```. The ^ and $ pin the match to the start and end of the string.
+    #[\s\S]* Just means "any number of any characters" - * by itself, would actually indicate an unlimited number of the preceeding \n - that tripped me right up. I fucking hate regex. Every time I pick it up, I hate it again.
+    if len(re.findall(r"^(`{3}\n[\s\S]*`{3})$",markdown)) > 0:
+        return BlockType.CODE
+    
+    #Every line in a quote block must start with a "greater-than" character: > followed by the quote text. 
+    #A space after > is allowed but not required.
+
+    #Every line in an unordered list block must start with a - character, followed by a space.
+
+    #No idea if I was supposed to be using regex before now, as this doesn't seem a good match.
+    #Now I'm here, clearly in the previous one I should have just used .startswith and .endswith.. FFS.. Still, good practice.
+
+    #split input on new lines
+    split_markdown = markdown.split("\n")
+    quote_line_count=0
+    unordered_list_count=0
+    #Loop the lines and see what they start with
+    for line in split_markdown:
+        if line.startswith(">"):
+            quote_line_count+=1
+        elif line.startswith("- "):
+            unordered_list_count+=1
+    #If as many lines starting > were found, as there were lines
+    if quote_line_count == len(split_markdown):
+        return BlockType.QUOTE
+    elif unordered_list_count == len(split_markdown):
+        return BlockType.UNORDERED_LIST
+    
+    #Every line in an ordered list block must start with a number followed by a . character and a space. 
+    # The number must start at 1 and increment by 1 for each line.
+    
+    #OK, different logic, so I'll treat myself to a new loop..
+    #Loop the lines and see what they start with
+    current_number = None
+    ordered_list_count = 0
+    for line in split_markdown:
+        #Does the line start with digits then ". "? And remember you need \. just . means ANY character (seemingly)
+        leading_order_str = re.findall(r"^(\d{1,}\. )",line)
+        #For "unlimited digits" you could also use \d+
+
+        #Do we find something that looks like it's a ordered list item
+        if len(leading_order_str) > 0:
+            #Now find what the actual number was - removing the ". ", SHOULD just give us an integer..
+            leading_order = int(leading_order_str[0].strip(". "))
+            
+            #Can't assume the numbering starts at 1, so if we haven't seen a number before, set it now and we'll start counting from here
+            #Actually, the f'in question said I had to validate that we start at one, so I'm going to be making this code messy..
+            if current_number is None:
+                #Hastily sticking in an if, to check it's 1 (but without this, I think any number would have worked)
+                if leading_order == 1:
+                    current_number = leading_order
+                    #Mark we've found a valid (first) line
+                    ordered_list_count +=1
+            #Else a number was already set
+            else:
+                #So we know we have a number from this block. If it's one more than we had before, it's another valid line
+                if current_number +1 == leading_order:
+                    ordered_list_count +=1
+                    current_number = leading_order 
+
+    #If every line was a nice in-sequence number, I think we know it's an ordered list
+    if ordered_list_count == len(split_markdown):
+        return BlockType.ORDERED_LIST
+    
+    #At this point, we should have picked up anything interesting, so can just say it's a normal paragraph
+    return BlockType.PARAGRAPH
+
+                    

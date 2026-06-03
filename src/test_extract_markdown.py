@@ -1,5 +1,5 @@
 import unittest
-from inline_markdown import extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes, markdown_to_blocks
+from inline_markdown import extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes, markdown_to_blocks, BlockType, block_to_block_type
 from textnode import TextNode, TextType
 
 
@@ -136,8 +136,9 @@ class TestExtractMarkdown(unittest.TestCase):
 
 
     def test_markdown_to_blocks(self):
-        md = """
-This is **bolded** paragraph
+        #NB - you can't indent this text block, otherwise you get a load of tabs appearing in your string (which I don't want)
+        #OH, and if you start it on a new line after the """, it'll make it lead with \n
+        md = """This is **bolded** paragraph
 
 This is another paragraph with _italic_ text and `code` here
 This is the same paragraph on a new line
@@ -155,6 +156,108 @@ This is the same paragraph on a new line
             ],
         )
 
-    
+    def test_block_ident_paragraph_positive(self):
+        md = """This is some generic
+text without anything interesting of note
+in it
+Oh go on, I'll check in some stuff to confuse
+1. sdsdsd
+> sdsdsdsd
+```
+Hopefully that'll all be ignored 
+"""
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH)
+
+
+    def test_block_ident_heading_positive1(self):
+        md = """# Title
+Of my very exciting block
+"""
+        self.assertEqual(block_to_block_type(md), BlockType.HEADING)        
+
+    def test_block_ident_heading_positive2(self):
+        md = """### Title
+#Of my very exciting block
+acasdasdasdasdas
+asdasdasdasd
+sdsdsd
+1.
+"""
+        self.assertEqual(block_to_block_type(md), BlockType.HEADING)        
+
+    def test_block_ident_code_positive(self):
+        md = """```
+This is some
+code```
+"""
+        self.assertEqual(block_to_block_type(md), BlockType.CODE)
+
+    def test_block_ident_code_negative(self):
+        md = """```
+This is some
+code``
+"""
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH)        
+
+    def test_block_ident_quote_positive(self):
+        md = """> This is a good
+> Quotation
+>Block"""
+        self.assertEqual(block_to_block_type(md), BlockType.QUOTE)        
+
+    def test_block_ident_quote_negative(self):
+        md = """> This is a good
+Quotation
+>Block"""
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH)  
+
+
+    def test_block_ident_unordered_positive(self):
+        md = """- This is an Item
+- And this is another one
+- Last one, I promise"""
+        self.assertEqual(block_to_block_type(md), BlockType.UNORDERED_LIST)        
+
+    def test_block_ident_unordered_negative(self):
+        md = """- This is an Item
+Oops, this isn't an item. 
+- Last one, I promise"""
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH)          
+
+    def test_block_ident_ordered_positive(self):
+        md = """1. Good Item
+2. Another Good One
+3. I just can't stop myself"""
+        self.assertEqual(block_to_block_type(md), BlockType.ORDERED_LIST)     
+
+    def test_block_ident_ordered_positive2(self):
+        md = """1. Good Item
+2. Another Good One
+3. I just can't stop myself
+4. Good Item
+5. Another Good One
+6. I just can't stop myself
+7. Good Item
+8. Another Good One
+9. I just can't stop myself
+10. Good Item
+11. Another Good One
+12. I just can't stop myself
+13. Good Item
+14. Another Good One
+15. I just can't stop myself"""
+        self.assertEqual(block_to_block_type(md), BlockType.ORDERED_LIST)               
+
+    def test_block_ident_ordered_negative(self):
+        md = """1. Good Item
+Nooooo - this isn't an item. Even if I put 2. here
+3. I just can't stop myself"""
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH) 
+
+    def test_block_ident_ordered_negative(self):
+        md = """2. Another Good One - Except I've started at 2. DOH!
+3. I just can't stop myself"""
+        self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH) 
+
 if __name__ == "__main__":
     unittest.main()
