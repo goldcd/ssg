@@ -8,13 +8,7 @@ class TestHTMLNode(unittest.TestCase):
         node = HTMLNode(props={"href": "https://www.google.com","target": "_blank"})
         expected_response =  ' href="https://www.google.com" target="_blank"'
         self.assertEqual(node.props_to_html(), expected_response)
-        
-    #I'm lazy, should work out how to check this..I shouldn't have made the repr multi-line verbose...
-    def test_repr(self):
-        node = HTMLNode(props={"href": "https://www.google.com","target": "_blank"})
-        print(node)
-
-    
+           
     def test_leaf_to_html_p(self):
         node = LeafNode("p", "Hello, world!")
         self.assertEqual(node.to_html(), "<p>Hello, world!</p>")        
@@ -42,6 +36,8 @@ class TestHTMLNode(unittest.TestCase):
             parent_node.to_html(),
             "<div><span><b>grandchild</b></span></div>",
         )
+
+
 
 if __name__ == "__main__":
     unittest.main()

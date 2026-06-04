@@ -1,5 +1,5 @@
 import unittest
-from inline_markdown import extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes, markdown_to_blocks, BlockType, block_to_block_type
+from inline_markdown import markdown_to_html_node, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes, markdown_to_blocks, BlockType, block_to_block_type
 from textnode import TextNode, TextType
 
 
@@ -259,5 +259,118 @@ Nooooo - this isn't an item. Even if I put 2. here
 3. I just can't stop myself"""
         self.assertEqual(block_to_block_type(md), BlockType.PARAGRAPH) 
 
+
+
+    def test_single_paragraph(self):
+        md = "This is a simple paragraph with no fancy formatting"
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><p>This is a simple paragraph with no fancy formatting</p></div>",
+        )
+
+    def test_multiple_paragraphs_with_inline(self):
+        md = """
+This is the **first** paragraph
+that spans two lines
+
+This is the _second_ paragraph with a `code` span
+"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><p>This is the <b>first</b> paragraph that spans two lines</p>"
+            "<p>This is the <i>second</i> paragraph with a <code>code</code> span</p></div>",
+    )        
+        
+
+
+    def test_headings(self):
+        md = """
+# Heading one
+
+### Heading three with **bold**
+
+###### Heading six
+"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><h1>Heading one</h1>"
+            "<h3>Heading three with <b>bold</b></h3>"
+            "<h6>Heading six</h6></div>",
+        )
+
+
+
+    def test_quote(self):
+        md = """
+> This is a quote
+> that spans lines
+> with _italic_ text
+"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><blockquote>This is a quote that spans lines with <i>italic</i> text</blockquote></div>",
+        )
+
+
+    def test_codeblock(self):
+        md = "```\ndef greet(name):\n    print(name)\n```"
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            '<div><pre><code>def greet(name):\n    print(name)\n</code></pre></div>',
+        )
+
+    def test_codeblock_no_inline(self):
+        md = "```\nThis _stays_ literal and **so** does this\n```"
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            '<div><pre><code>This _stays_ literal and **so** does this\n</code></pre></div>',
+        )
+
+    def test_unordered_list(self):
+        md = """
+- First item
+- Second with **bold**
+- Third with _italic_
+"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><ul>"
+            "<li>First item</li>"
+            "<li>Second with <b>bold</b></li>"
+            "<li>Third with <i>italic</i></li>"
+            "</ul></div>",
+        )
+
+
+    def test_ordered_list(self):
+        md = """
+1. First item
+2. Second with **bold**
+3. Third with _italic_
+"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><ol>"
+            "<li>First item</li>"
+            "<li>Second with <b>bold</b></li>"
+            "<li>Third with <i>italic</i></li>"
+            "</ol></div>",
+        )
 if __name__ == "__main__":
     unittest.main()

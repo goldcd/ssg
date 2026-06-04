@@ -1,8 +1,9 @@
 import re
-from textnode import TextNode, TextType
+from textnode import TextNode, TextType, text_node_to_html_node
 from enum import Enum
+from htmlnode import HTMLNode, ParentNode, LeafNode
 
-
+#Enumeration to classify pieces of text as .md markup types
 class BlockType(Enum):
     PARAGRAPH = "paragraph"
     HEADING = "heading"
@@ -49,7 +50,7 @@ def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: 
 def extract_markdown_images(text):
     #This was the solution provided as a tip 
     return re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)",text)
-    #THis was my simpler one.. but seemingly not great for reasona I don't understand.. :)
+    #THis was my simpler one.. but seemingly not great for reasons I don't understand.. :)
     #return re.findall(r"\[(.*?)\]\((.*?)\)",text)
 
 def extract_markdown_links(text):
@@ -167,7 +168,7 @@ def markdown_to_blocks(markdown:str) ->list[str]:
     return cleaned_blocks
 
 def block_to_block_type(markdown:str) -> BlockType:
-    
+
     #Headings start with 1-6 # characters, followed by a space and then the heading text.
     
     #Is this a heading block, with 1-6 hashes and a space at the start?
@@ -247,3 +248,91 @@ def block_to_block_type(markdown:str) -> BlockType:
     return BlockType.PARAGRAPH
 
                     
+def markdown_to_html_node(markdown:str) -> HTMLNode:
+    #List of the top level HTML nodes I want to put under the root HTML node I'll return
+    root_node_children = []
+    #Split the giant piece of markdown passed in, into blocks of markdown simply on paragraph divisions
+    md_blocks = markdown_to_blocks(markdown)
+
+        
+
+    #Loop through these .md blocks
+    for md_block in md_blocks:
+
+        #For each one, get the classification of it
+        block_type = block_to_block_type(md_block)
+   
+        #If the block's a paragraph, get the children and then put them into a parent_node that aligns with this current block
+        if block_type == BlockType.PARAGRAPH:
+            #We were just asked to replace new lines with a space - I don't like it, but it's what it wanted me to do..
+            children = text_to_children(md_block.replace("\n"," "))
+            node = ParentNode("p", children)
+            root_node_children.append(node)
+        elif block_type == BlockType.HEADING:
+            #we need to determine the size of the heading
+            header_level = 0
+            for i in range(len(md_block)):
+                if md_block[i] == "#":
+                    header_level+=1
+                else:
+                    break
+            tag="h"+str(header_level)
+            #Now trim off this header
+            #Add 1, as we should have a space after the header ###'s
+            md_block=md_block[header_level+1:]
+            children = text_to_children(md_block)
+            node = ParentNode(tag, children)
+            root_node_children.append(node)
+        elif block_type == BlockType.QUOTE:
+            #Need to strip off the "> " from the start of each line
+            #First need to split the blocks into lines, we as need to clean off the "> " prefix from each one
+            lines = md_block.split("\n")
+            cleaned_lines = []
+            for line in lines:
+                #Clean off any leading > and then strip to remove space
+                cleaned_lines.append(line.lstrip(">").strip())
+            content = " ".join(cleaned_lines)
+            children = text_to_children(content)
+            node = ParentNode("blockquote", children)
+            root_node_children.append(node)
+        elif block_type == BlockType.CODE:
+            #Pull the actual code out of the '''\n and ''' code limits
+            code = md_block[4:-3]
+            #Create the node containing the code:
+            code_node = text_node_to_html_node(TextNode(code, TextType.TEXT))
+            #Then nest it in <pre><code> tags
+            node = ParentNode("code", [code_node])
+            pre_node = ParentNode("pre", [node])
+            root_node_children.append(pre_node)
+        elif block_type == BlockType.UNORDERED_LIST:
+            items = md_block.split("\n")   # each line is one item
+            li_nodes = []
+            for item in items:
+                text = item[2:]            # strip the "- " marker
+                children = text_to_children(text)
+                li_nodes.append(ParentNode("li", children))
+            node = ParentNode("ul", li_nodes)
+            root_node_children.append(node)
+        elif block_type == BlockType.ORDERED_LIST:
+            items = md_block.split("\n")
+            li_nodes = []
+            for item in items:
+                text = item.split(". ", 1)[1]
+                children = text_to_children(text)
+                li_nodes.append(ParentNode("li", children))
+            node = ParentNode("ol", li_nodes)
+            root_node_children.append(node)
+                
+    return ParentNode(tag="div", children=root_node_children)
+
+
+
+def text_to_children(text: str) -> list[HTMLNode]:
+
+    text_nodes = text_to_textnodes(text)
+    children = []
+    for text_node in text_nodes:
+        # convert each one and append it
+        html_node = text_node_to_html_node(text_node)
+        children.append(html_node)
+    return children
