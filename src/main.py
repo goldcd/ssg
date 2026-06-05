@@ -74,6 +74,7 @@ def extract_title(markdown:str):
 
     raise Exception("Wasn't able to find a title")
 
+#Just slurp the contents of a file and return it
 def get_file(path:str)->str:
     #Pull in a file and return the content
     file = io.open(path)
@@ -81,6 +82,12 @@ def get_file(path:str)->str:
     file.close()
     return file_content
 
+#Write a file
+def put_file(path:str, content:str):
+    #need to open it with a write flag if you.. well want to write to it..
+    file = io.open(path,'w')
+    file.write(content)
+    file.close()
 
 def generate_page(from_path, template_path, dest_path):
 
@@ -96,9 +103,15 @@ def generate_page(from_path, template_path, dest_path):
     #Now convert this to html
     html = html_node.to_html()
 
-    print (html)
+    #Grab the title from the md
+    title = extract_title(content)
+
+    #Merge the title and content into the HTML template
+    template = template.replace("{{ Title }}",title)
+    template = template.replace("{{ Content }}",html)
     
-    
+    #Now write out the updated template to the destination
+    put_file(dest_path,template)
 
 
 main()
