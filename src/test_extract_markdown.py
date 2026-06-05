@@ -1,6 +1,8 @@
 import unittest
 from inline_markdown import markdown_to_html_node, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes, markdown_to_blocks, BlockType, block_to_block_type
 from textnode import TextNode, TextType
+from main import extract_title
+import inspect
 
 
 class TestExtractMarkdown(unittest.TestCase):
@@ -372,5 +374,38 @@ This is the _second_ paragraph with a `code` span
             "<li>Third with <i>italic</i></li>"
             "</ol></div>",
         )
+
+
+    #OK - this is clearly how I should have done them all.. still maybe I'll pay myself on lines of code..
+    def test_md_title_extraction(self):
+
+        print (f"\nTesting: {inspect.currentframe().f_code.co_name}")
+
+        cases = [
+            ("# This is my simple title", "This is my simple title", True),
+            ("\n \n ##This is a decoy\n# This is my title\nAnd some random text", "This is my title", True),
+            ("\n \n ##This is a decoy\n## This is my title\nAnd some random text", "This is my title", Exception),
+            (
+"""##This is a decoy
+# This is my title
+# And some random text
+# """
+            , "This is my title", True),    
+                ]
+
+
+        for case in cases:
+            if case[2] is True:
+                self.assertEqual (extract_title(case[0]), case[1])
+            elif case[2] is False:
+                self.assertNotEqual (extract_title(case[0]), case[1])
+            elif case[2] is Exception:
+                with self.assertRaises(Exception):
+                    extract_title(case[0])
+
+
+
 if __name__ == "__main__":
     unittest.main()
+
+

@@ -3,11 +3,14 @@ from textnode import TextNode
 from os import listdir, mkdir, getcwd
 from os.path import exists, join, isfile, isdir
 from shutil import copy, rmtree
+from inline_markdown import markdown_to_html_node
+import io
 
 def main():
-    #my_test_node = TextNode("This is some anchor text", "link", "https://www.boot.dev")
-    #print (my_test_node)
+    #Clear out the public folder and repopulate it from static folder
     copy_static()
+    #Now generate the page
+    generate_page("content/index.md", "template.html", "public/index.html")
 
 def copy_static():
     #Define the paths we want our app to operate on
@@ -32,6 +35,8 @@ def copy_static():
 
     #Now we want to copy everything from the src into the dest
     copy_tree(absolute_src_path,absolute_dest_path)
+
+
 
 #Function I can recursively call to copy from one dir to another
 def copy_tree(src:str,dest:str):
@@ -58,6 +63,39 @@ def copy_tree(src:str,dest:str):
 
             print(f"Iterating copy from: {new_src} to: {new_dest}")
             copy_tree (new_src, new_dest)
+
+#function to return the title (if it exists) from a piece of markdown chucked in (I.E. Text found after the first line starting "# ")
+def extract_title(markdown:str):
+    #Split text on new lines
+    markdown_lines = markdown.split("\n")
+    for markdown_line in markdown_lines:
+        if markdown_line[0:2] == "# ":
+            return markdown_line[2:]
+
+    raise Exception("Wasn't able to find a title")
+
+def get_file(path:str)->str:
+    #Pull in a file and return the content
+    file = io.open(path)
+    file_content = file.read()
+    file.close()
+    return file_content
+
+
+def generate_page(from_path, template_path, dest_path):
+
+    #Say what we're doing
+    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+
+    #Load in the from and template paths
+    content, template =  get_file(from_path), get_file(template_path)
+
+    #Convert the markdown content to html node
+    html_node = markdown_to_html_node(content)
+    html = html_node.to_html
+    
+    print (html)
+
 
 
 main()

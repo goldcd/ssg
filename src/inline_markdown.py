@@ -336,3 +336,4 @@ def text_to_children(text: str) -> list[HTMLNode]:
         html_node = text_node_to_html_node(text_node)
         children.append(html_node)
     return children
+
