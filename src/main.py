@@ -10,7 +10,7 @@ def main():
     #Clear out the public folder and repopulate it from static folder
     copy_static()
     #Now generate the page
-    generate_page("content/index.md", "template.html", "public/index.html")
+    generate_pages_recursive("content/", "template.html", "public/")
 
 def copy_static():
     #Define the paths we want our app to operate on
@@ -113,5 +113,39 @@ def generate_page(from_path, template_path, dest_path):
     #Now write out the updated template to the destination
     put_file(dest_path,template)
 
+#Crawl for all the content files we might want to parse
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+    
+    for item in listdir(dir_path_content):
+
+        #Get fully qualified paths/files for everything you find, and work out if it's a file (or a directory)
+        fq_item = join(dir_path_content,item)
+        fq_target = join(dest_dir_path,item)
+        is_file, is_dir = isfile(fq_item), isdir(fq_item)
+
+        #We just want to get the .md files
+        if is_file and fq_item[-3:]==".md": 
+            #Now generate the HTML in the output
+
+            #Need to switch the suffix from .md to .html
+            fq_target = fq_target[:-3]+".html"
+
+            print (f"FOUND AN MD! {fq_item}")
+            print (f"generate_page({fq_item}, {template_path}, {fq_target})")
+            generate_page(fq_item, template_path, fq_target)
+        
+        #If the item is a directory, then recursively call this function for it
+        if is_dir:
+            #Add the directory to the path, and iterate
+            updated_dir_path_content = join(dir_path_content,item)
+            updated_dest_dir_path = join(dest_dir_path,item)
+
+            print (f"Switching to {updated_dir_path_content} / {updated_dest_dir_path}")
+
+            #First make the directory in the target
+            mkdir(updated_dest_dir_path)
+
+            #Then process it
+            generate_pages_recursive (updated_dir_path_content, template_path, updated_dest_dir_path)
 
 main()
