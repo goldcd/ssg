@@ -47,12 +47,19 @@ class HTMLNode:
     
 class LeafNode(HTMLNode):
 
-    def __init__(self, tag, value, props:dict|None=None):
+    def __init__(self, tag, value=None, props:dict|None=None):
         super().__init__(tag, value, None, props)
     
     def to_html(self):
+
+        #Logic for self-closing tags, where we don't need to enclose a value
+        selfclosing = {"hr", "img", "br"}
+        if self.tag in selfclosing:
+            return f"<{self.tag}{self.props_to_html()}>"
+
+        #For the other tags where we want to enclose a value between an open and close, do what we did before
         if self.value is None:
-            raise ValueError("Value must be set for a Leaf Node")
+            raise ValueError(f"Value must be set for a Leaf Node if not self-closing: {selfclosing}")
         elif self.tag is None:
             return self.value
         else:

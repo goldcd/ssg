@@ -92,10 +92,13 @@ def generate_page(from_path, template_path, dest_path):
 
     #Convert the markdown content to html node
     html_node = markdown_to_html_node(content)
-    html = html_node.to_html
-    
-    print (html)
 
+    #Now convert this to html
+    html = html_node.to_html()
+
+    print (html)
+    
+    
 
 
 main()
