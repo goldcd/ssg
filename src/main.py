@@ -5,17 +5,26 @@ from os.path import exists, join, isfile, isdir
 from shutil import copy, rmtree
 from inline_markdown import markdown_to_html_node
 import io
+import sys
 
 def main():
+
+    #Let the the basepath be passed in as a parameter on launch
+    #[0] is what pything is actually executing, so [1] is whatever comes next (if exists)
+    if len(sys.argv) > 1:
+        passed_basepath = sys.argv[1]
+    else:
+        passed_basepath = "/"
+
     #Clear out the public folder and repopulate it from static folder
     copy_static()
     #Now generate the page
-    generate_pages_recursive("content/", "template.html", "public/")
+    generate_pages_recursive("content/", "template.html", "docs/", passed_basepath)
 
 def copy_static():
     #Define the paths we want our app to operate on
     src_path = "static"
-    dest_path = "public"
+    dest_path = "docs"
     
     print("Starting Site Distribution")
 
@@ -89,7 +98,7 @@ def put_file(path:str, content:str):
     file.write(content)
     file.close()
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, passed_basepath):
 
     #Say what we're doing
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
@@ -109,12 +118,16 @@ def generate_page(from_path, template_path, dest_path):
     #Merge the title and content into the HTML template
     template = template.replace("{{ Title }}",title)
     template = template.replace("{{ Content }}",html)
+
+    #Now we're letting the user specify a basepath for the site, we need to alter the prefix on image and anchor URLS to include this
+    template = template.replace('href="/',f'href="{passed_basepath}')
+    template = template.replace('src="/',f'src="{passed_basepath}') 
     
     #Now write out the updated template to the destination
     put_file(dest_path,template)
 
 #Crawl for all the content files we might want to parse
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, passed_basepath):
     
     for item in listdir(dir_path_content):
 
@@ -132,7 +145,7 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
 
             print (f"FOUND AN MD! {fq_item}")
             print (f"generate_page({fq_item}, {template_path}, {fq_target})")
-            generate_page(fq_item, template_path, fq_target)
+            generate_page(fq_item, template_path, fq_target, passed_basepath)
         
         #If the item is a directory, then recursively call this function for it
         if is_dir:
@@ -146,6 +159,6 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
             mkdir(updated_dest_dir_path)
 
             #Then process it
-            generate_pages_recursive (updated_dir_path_content, template_path, updated_dest_dir_path)
+            generate_pages_recursive (updated_dir_path_content, template_path, updated_dest_dir_path, passed_basepath)
 
 main()
